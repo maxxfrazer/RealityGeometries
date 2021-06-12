@@ -8,19 +8,29 @@
 import RealityKit
 
 extension MeshResource {
-    static func generateDetailedPlane(
+    /// Creates a new plane mesh with the specified values.
+    /// - Parameters:
+    ///   - width: Width of the output plane
+    ///   - depth: Depth of the output plane
+    ///   - vertices: Vertex count in the x and z axis
+    /// - Returns: A plane mesh
+    public static func generateDetailedPlane(
         width: Float, depth: Float, vertices: (Int, Int)
     ) throws -> MeshResource {
         var descr = MeshDescriptor()
         var meshPositions: [SIMD3<Float>] = []
         var indices: [UInt32] = []
-        for x_v in 0..<(vertices.0) { // 5
+        var textureMap: [SIMD2<Float>] = []
+        for x_v in 0..<(vertices.0) {
             let vertexCounts = meshPositions.count
             print(vertexCounts)
-            for y_v in 0..<(vertices.1) { // 4
+            for y_v in 0..<(vertices.1) {
                 meshPositions.append([
-                    (Float(x_v) / Float(vertices.0 - 1) - 0.5) * width, 0, (0.5 - Float(y_v) / Float(vertices.1 - 1)) * depth
+                    (Float(x_v) / Float(vertices.0 - 1) - 0.5) * width,
+                    0,
+                    (0.5 - Float(y_v) / Float(vertices.1 - 1)) * depth
                 ])
+                textureMap.append([Float(x_v) / Float(vertices.0 - 1), Float(y_v) / Float(vertices.1 - 1)])
                 if x_v > 0 && y_v > 0 {
                     indices.append(
                         contentsOf: [
@@ -32,8 +42,7 @@ extension MeshResource {
         }
         descr.primitives = .triangles(indices)
         descr.positions = MeshBuffer(meshPositions)
-        // - TODO: Add Texture Map
-//        descr.textureCoordinates = MeshBuffers.TextureCoordinates([])
+        descr.textureCoordinates = MeshBuffers.TextureCoordinates(textureMap)
         return try .generate(from: [descr])
     }
 }
