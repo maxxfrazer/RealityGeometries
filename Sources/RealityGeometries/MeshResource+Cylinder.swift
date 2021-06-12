@@ -8,7 +8,10 @@
 import RealityKit
 
 extension MeshResource {
-    fileprivate static func cylinderIndices(_ sides: Int, _ lowerCenterIndex: UInt32, _ upperCenterIndex: UInt32, _ splitFaces: Bool) -> ([UInt32], [UInt32]) {
+    fileprivate static func cylinderIndices(
+        _ sides: Int, _ lowerCenterIndex: UInt32,
+        _ upperCenterIndex: UInt32, _ splitFaces: Bool
+    ) -> ([UInt32], [UInt32]) {
         var indices: [UInt32] = []
         var materialIndices: [UInt32] = []
         for side in 0..<sides {
@@ -44,7 +47,7 @@ extension MeshResource {
         var theta: Float = 0
         let normalizeMult = 1 / sqrt(radius)
         let thetaInc = 2 * .pi / Float(sides)
-        let uStep: Float = 1 / Float(sides);
+        let uStep: Float = 1 / Float(sides)
         // first vertices added will be bottom edges
         var vertices = [CompleteVertex]()
         // all top edge vertices of the cylinder
@@ -90,7 +93,7 @@ extension MeshResource {
                 normal: [0, 1, 0], uv: [cosTheta + 1, sinTheta + 1] / 2)
             )
 
-            theta += thetaInc;
+            theta += thetaInc
         }
         return (vertices, upperEdgeVertices, lowerCapVertices, upperCapVertices)
     }

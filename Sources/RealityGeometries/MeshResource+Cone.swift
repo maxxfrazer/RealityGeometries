@@ -8,7 +8,9 @@
 import RealityKit
 
 extension MeshResource {
-    fileprivate static func coneIndices(_ sides: Int, _ lowerCenterIndex: UInt32, _ splitFaces: Bool) -> ([UInt32], [UInt32]) {
+    fileprivate static func coneIndices(
+        _ sides: Int, _ lowerCenterIndex: UInt32, _ splitFaces: Bool
+    ) -> ([UInt32], [UInt32]) {
         var indices: [UInt32] = []
         var materialIndices: [UInt32] = []
         for side in 0..<sides {
@@ -35,7 +37,7 @@ extension MeshResource {
     ) -> ([CompleteVertex], [CompleteVertex], [CompleteVertex]) {
         var theta: Float = 0
         let thetaInc = 2 * .pi / Float(sides)
-        let uStep: Float = 1 / Float(sides);
+        let uStep: Float = 1 / Float(sides)
         // first vertices added will be bottom edges
         var vertices = [CompleteVertex]()
         // all top edge vertices of the cylinder
@@ -55,7 +57,7 @@ extension MeshResource {
             let lowerNormal = cross(
                 SIMD3<Float>(-sinTheta, 0, cosTheta),
                 SIMD3<Float>(0, 1, 0) - SIMD3<Float>(cosTheta, 0, sinTheta)
-            )
+            ).normalised
             let bottomVertex = CompleteVertex(
                 position: lowerPosition,
                 normal: lowerNormal,
@@ -71,14 +73,20 @@ extension MeshResource {
                 normal: [0, -1, 0], uv: [cosTheta + 1, sinTheta + 1] / 2)
             )
 
+            let cosThetaHalf = cos(theta + thetaInc / 2)
+            let sinThetaHalf = sin(theta + thetaInc / 2)
+            let topNormal = cross(
+                SIMD3<Float>(-sinThetaHalf, 0, cosThetaHalf),
+                SIMD3<Float>(0, 1, 0) - SIMD3<Float>(cosThetaHalf, 0, sinThetaHalf)
+            ).normalised
             // add vertex for top side facing out
             let topVertex = CompleteVertex(
                 position: [0, height / 2, 0],
-                normal: lowerNormal, uv: [0.5, 1]
+                normal: topNormal, uv: [0.5, 1]
             )
             upperEdgeVertices.append(topVertex)
 
-            theta += thetaInc;
+            theta += thetaInc
         }
         return (vertices, upperEdgeVertices, lowerCapVertices)
     }
@@ -122,4 +130,3 @@ extension MeshResource {
         return try MeshResource.generate(from: [meshDescr])
     }
 }
-

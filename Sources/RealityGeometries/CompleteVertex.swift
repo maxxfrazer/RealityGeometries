@@ -36,3 +36,12 @@ internal extension Array where Element == CompleteVertex {
         return meshDescriptor
     }
 }
+
+internal extension SIMD3 where Scalar == Float {
+    var normalised: SIMD3<Float> {
+        return self / self.length
+    }
+    var length: Float {
+        return sqrt(length_squared(self))
+    }
+}
