@@ -21,7 +21,7 @@ extension MeshResource {
     ///   - width: Width of your path (default 0.5).
     ///   - curvePoints: Number of points to make the curve at any turn in the path,
     ///       default to 8. 0 will make sharp corners.
-    /// - Returns: A new MeshResource representing the path for use with any RealityKit Application. And the length of the path.
+    /// - Returns: A new MeshResource representing the path for use with any RealityKit Application, and path length.
     public static func generatePath(
         _ points: [SIMD3<Float>], width: Float = 0.5,
         curvePoints: Float = 8, curveDistance: Float = 1.5
@@ -35,32 +35,9 @@ extension MeshResource {
         return try (MeshResource.generate(from: [meshDesc]), length)
     }
 
-    /// Create your path (triangle strip) from a series of `SIMD3<Float>` points
-    ///
-    /// This path is assumed all normals facing directly up
-    /// in the positive Y axis for now.
-    ///
-    /// - Parameters:
-    ///   - path: Point from which to make the path.
-    ///   - width: Width of your path (default 0.5).
-    ///   - curvePoints: Number of points to make the curve at any turn in the path,
-    ///       default to 8. 0 will make sharp corners.
-    /// - Returns: A new MeshDescriptor representing the path for use with any RealityKit Application. And the length of the path.
-    public class func path(
-        path: [SIMD3<Float>], width: Float = 0.5,
-        curvePoints: Float = 8, curveDistance: Float = 1.5
-    ) -> (MeshDescriptor?, Float) {
-        if path.count < 2 {
-            return (nil, 0)
-        }
-        if curveDistance < 1 {
-            if #available(iOS 12.0, *) {
-                os_log(.error, "curve distance is too low, minimum value is 1")
-            } else {
-                fatalError("curve distance is too low, minimum value is 1")
-            }
-        }
-        let curveDistance = max(curveDistance, 1)
+    fileprivate static func generatePathVerts(
+        _ path: [SIMD3<Float>], _ width: Float, _ curvePoints: Float, _ curveDistance: Float
+    ) -> (vertices: [CompleteVertex], indices: [UInt32]) {
         var vertices: [CompleteVertex] = []
         var indices: [UInt32] = []
         let maxIndex = path.count - 1
@@ -81,7 +58,6 @@ extension MeshResource {
                 addVector = SIMD3<Float>(vert.z - path[index - 1].z, 0, path[index - 1].x - vert.x)
             }
             addVector = addVector.normalized() * (width / 2)
-//            var lastPoints: (SIMD3<Float>, SIMD3<Float>)?
             if curvePoints > 0, path.count >= index + 2, bentBy > 0.001 {
                 let edge1 = vert - addVector
                 let edge2 = vert + addVector
@@ -113,6 +89,36 @@ extension MeshResource {
                 }
             }
         }
+        return (vertices, indices)
+    }
+
+    /// Create your path (triangle strip) from a series of `SIMD3<Float>` points
+    ///
+    /// This path is assumed all normals facing directly up
+    /// in the positive Y axis for now.
+    ///
+    /// - Parameters:
+    ///   - path: Point from which to make the path.
+    ///   - width: Width of your path (default 0.5).
+    ///   - curvePoints: Number of points to make the curve at any turn in the path,
+    ///       default to 8. 0 will make sharp corners.
+    /// - Returns: A new MeshDescriptor representing the path for use with any RealityKit Application, and path length.
+    public class func path(
+        path: [SIMD3<Float>], width: Float = 0.5,
+        curvePoints: Float = 8, curveDistance: Float = 1.5
+    ) -> (MeshDescriptor?, Float) {
+        if path.count < 2 {
+            return (nil, 0)
+        }
+        if curveDistance < 1 {
+            if #available(iOS 12.0, *) {
+                os_log(.error, "curve distance is too low, minimum value is 1")
+            } else {
+                fatalError("curve distance is too low, minimum value is 1")
+            }
+        }
+        let curveDistance = max(curveDistance, 1)
+        var (vertices, indices) = generatePathVerts(path, width, curvePoints, curveDistance)
         let (arr, pathLength) = MeshResource.distancesBetweenValues(of: vertices)
 
         for (idx, lenVal) in arr.enumerated() {

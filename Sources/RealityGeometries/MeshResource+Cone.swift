@@ -32,9 +32,38 @@ extension MeshResource {
         return (indices, materialIndices)
     }
 
+    fileprivate struct ConeVertices {
+        var lowerEdge: [CompleteVertex]
+        var upperEdge: [CompleteVertex]
+        var lowerCap: [CompleteVertex]
+        var combinedVerts: [CompleteVertex]?
+        var indices: [UInt32]?
+        var materialIndices: [UInt32]?
+
+        mutating func calculateDetails(
+            height: Float, sides: Int, splitFaces: Bool
+        ) -> Bool {
+            let halfHeight = height / 2
+            var vertices = lowerEdge
+            vertices.append(contentsOf: upperEdge)
+
+            let lowerCenterIndex = UInt32(vertices.count)
+            vertices.append(CompleteVertex(
+                position: [0, -halfHeight, 0], normal: [0, -1, 0], uv: [0.5, 0.5]
+            ))
+
+            vertices.append(contentsOf: lowerCap)
+            self.combinedVerts = vertices
+            (self.indices, self.materialIndices) = coneIndices(
+                sides, lowerCenterIndex, splitFaces
+            )
+            return true
+        }
+    }
+
     fileprivate static func coneVertices(
         _ sides: Int, _ radius: Float, _ height: Float
-    ) -> ([CompleteVertex], [CompleteVertex], [CompleteVertex]) {
+    ) -> ConeVertices {
         var theta: Float = 0
         let thetaInc = 2 * .pi / Float(sides)
         let uStep: Float = 1 / Float(sides)
@@ -88,7 +117,9 @@ extension MeshResource {
 
             theta += thetaInc
         }
-        return (vertices, upperEdgeVertices, lowerCapVertices)
+        return .init(
+            lowerEdge: vertices, upperEdge: upperEdgeVertices, lowerCap: lowerCapVertices
+        )
     }
 
     /// Creates a new cone mesh with the specified values
@@ -102,30 +133,17 @@ extension MeshResource {
         radius: Float, height: Float, sides: Int = 24, splitFaces: Bool = false
     ) throws -> MeshResource {
         assert(sides > 2, "Sides must be an integer above 2")
-        let halfHeight = height / 2
-
         // first vertices added to vertices will be bottom edges
         // upperEdgeVertices are all top edge vertices of the cylinder
         // lowerCapVertices are the bottom edge vertices
-        var (
-            vertices, upperEdgeVertices, lowerCapVertices
-        ) = coneVertices(sides, radius, height)
-
-        vertices.append(contentsOf: upperEdgeVertices)
-
-        let lowerCenterIndex = UInt32(vertices.count)
-        vertices.append(CompleteVertex(
-            position: [0, -halfHeight, 0], normal: [0, -1, 0], uv: [0.5, 0.5]
-        ))
-
-        vertices.append(contentsOf: lowerCapVertices)
-
-        let (indices, materialIndices) = coneIndices(
-            sides, lowerCenterIndex, splitFaces
-        )
-
-        let meshDescr = vertices.generateMeshDescriptor(
-            with: indices, materials: materialIndices
+        var coneVerties = coneVertices(sides, radius, height)
+        if !coneVerties.calculateDetails(
+            height: height, sides: sides, splitFaces: splitFaces
+        ) {
+            assertionFailure("Could not calculate cone")
+        }
+        let meshDescr = coneVerties.combinedVerts!.generateMeshDescriptor(
+            with: coneVerties.indices!, materials: coneVerties.materialIndices!
         )
         return try MeshResource.generate(from: [meshDescr])
     }

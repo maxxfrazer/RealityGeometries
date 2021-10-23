@@ -1,0 +1,11 @@
+disabled_rules:
+  - todo
+  - type_name
+identifier_name:
+  excluded:
+    - x_v
+    - y_v
+  min_length:
+    warning: 1
+excluded:
+  - RealityGeometries+Example

@@ -7,7 +7,6 @@
 
 import RealityKit
 
-
 extension MeshResource {
     /// Creates a new plane mesh with the specified values.
     /// - Parameters:

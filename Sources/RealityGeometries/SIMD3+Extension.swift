@@ -31,7 +31,6 @@ internal extension SIMD3 where SIMD3.Scalar: Comparable {
         return x * vector.x + y * vector.y + z * vector.z
     }
 
-
     // SIMD3<Scalar> operator functions
 
     static func + (
@@ -66,4 +65,3 @@ internal extension SIMD3 where SIMD3.Scalar: Comparable {
         return SIMD3<Scalar>(vector.x / scalar, vector.y / scalar, vector.z / scalar)
     }
 }
-
