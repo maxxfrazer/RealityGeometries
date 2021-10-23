@@ -1,11 +1,12 @@
 //
-//  File.swift
+//  MeshResource+Planes.swift
 //  
 //
 //  Created by Max Cobb on 11/06/2021.
 //
 
 import RealityKit
+
 
 extension MeshResource {
     /// Creates a new plane mesh with the specified values.
