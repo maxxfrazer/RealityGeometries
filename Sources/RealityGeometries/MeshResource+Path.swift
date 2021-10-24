@@ -18,16 +18,13 @@ extension MeshResource {
     ///
     /// - Parameters:
     ///   - path: Point from which to make the path.
-    ///   - width: Width of your path (default 0.5).
-    ///   - curvePoints: Number of points to make the curve at any turn in the path,
-    ///       default to 8. 0 will make sharp corners.
+    ///   - pathProperties: Properties of the path, including width and corner behaviour.
     /// - Returns: A new MeshResource representing the path for use with any RealityKit Application, and path length.
     public static func generatePath(
-        _ points: [SIMD3<Float>], width: Float = 0.5,
-        curvePoints: Float = 8, curveDistance: Float = 1.5
+        _ points: [SIMD3<Float>], pathProperties: PathProperties
     ) throws -> (mesh: MeshResource?, pathLength: Float) {
-        let (meshDesc, length) = self.path(
-            path: points, width: width, curvePoints: curvePoints, curveDistance: curveDistance
+        let (meshDesc, length) = self.pathDescriptor(
+            path: points, pathProperties: pathProperties
         )
         guard let meshDesc = meshDesc else {
             return (nil, length)
@@ -35,8 +32,27 @@ extension MeshResource {
         return try (MeshResource.generate(from: [meshDesc]), length)
     }
 
+    /// Properties relating to the path being created by MeshResource.generatePath
+    public struct PathProperties {
+        /// Width of your path (default 0.5).
+        public var width: Float = 0.5
+        /// Number of points to make the curve at any turn in the path, default to 8. 0 will make sharp corners.
+        public var curvePoints: Float = 8
+        /// Distance from the centre of the path to the inner edge of the curve radius.
+        public var curveDistance: Float = 1.5
+        /// Type of texture mapping for the path. Default `.zeroToOne`
+        public var textureMapping: PathTextureMapping = .zeroToOne
+    }
+    /// Type of texture mapping for the path.
+    public enum PathTextureMapping {
+        /// Path texture mapping in y axis goes from zero at the beginning, one at the end.
+        case zeroToOne
+        /// Path texture mapping in y axis is equal to the lenght of the path
+        case repeating
+    }
+
     fileprivate static func generatePathVerts(
-        _ path: [SIMD3<Float>], _ width: Float, _ curvePoints: Float, _ curveDistance: Float
+        _ path: [SIMD3<Float>], properties: PathProperties
     ) -> (vertices: [CompleteVertex], indices: [UInt32]) {
         var vertices: [CompleteVertex] = []
         var indices: [UInt32] = []
@@ -57,26 +73,29 @@ extension MeshResource {
                 // last point
                 addVector = SIMD3<Float>(vert.z - path[index - 1].z, 0, path[index - 1].x - vert.x)
             }
-            addVector = addVector.normalized() * (width / 2)
-            if curvePoints > 0, path.count >= index + 2, bentBy > 0.001 {
+            addVector = addVector.normalized() * (properties.width / 2)
+            if properties.curvePoints > 0, path.count >= index + 2, bentBy > 0.001 {
                 let edge1 = vert - addVector
                 let edge2 = vert + addVector
-                var bendAround = vert - (addVector * curveDistance)
+                var bendAround = vert - (addVector * properties.curveDistance)
 
                 // replace this with quaternions when possible
                 if MeshResource.newTurning(points: Array(path[(index-1)...(index+1)])) < 0 { // left turn
-                    bendAround = vert + (addVector * curveDistance)
+                    bendAround = vert + (addVector * properties.curveDistance)
                     bentBy *= -1
                 }
-                for val in 0...Int(curvePoints) {
+                for val in 0...Int(properties.curvePoints) {
                     let firstPoint = edge2.rotate(
-                        about: bendAround, by: (-0.5 + Float(val) / curvePoints) * bentBy
+                        about: bendAround, by: (-0.5 + Float(val) / properties.curvePoints) * bentBy
                     )
                     let secondPoint = edge1.rotate(
-                        about: bendAround, by: (-0.5 + Float(val) / curvePoints) * bentBy
+                        about: bendAround,
+                        by: (-0.5 + Float(val) / properties.curvePoints) * bentBy
                     )
-                    vertices.append(CompleteVertex(position: firstPoint, normal: [0, 1, 0], uv: [0, 0]))
-                    vertices.append(CompleteVertex(position: secondPoint, normal: [0, 1, 0], uv: [0, 0]))
+                    vertices.append(contentsOf: [
+                        CompleteVertex(position: firstPoint, normal: [0, 1, 0], uv: [0, 0]),
+                        CompleteVertex(position: secondPoint, normal: [0, 1, 0], uv: [0, 0])
+                    ])
                     addTriangleIndices(indices: &indices, at: UInt32(vertices.count - 2))
                 }
             } else {
@@ -99,31 +118,24 @@ extension MeshResource {
     ///
     /// - Parameters:
     ///   - path: Point from which to make the path.
-    ///   - width: Width of your path (default 0.5).
-    ///   - curvePoints: Number of points to make the curve at any turn in the path,
-    ///       default to 8. 0 will make sharp corners.
+    ///   - pathProperties: Properties of the path, including width and corner behaviour.
     /// - Returns: A new MeshDescriptor representing the path for use with any RealityKit Application, and path length.
-    public class func path(
-        path: [SIMD3<Float>], width: Float = 0.5,
-        curvePoints: Float = 8, curveDistance: Float = 1.5
+    public class func pathDescriptor(
+        path: [SIMD3<Float>], pathProperties: PathProperties
     ) -> (MeshDescriptor?, Float) {
         if path.count < 2 {
             return (nil, 0)
         }
-        if curveDistance < 1 {
-            if #available(iOS 12.0, *) {
-                os_log(.error, "curve distance is too low, minimum value is 1")
-            } else {
-                fatalError("curve distance is too low, minimum value is 1")
-            }
+        if pathProperties.curveDistance < 1 {
+            os_log(.error, "curve distance is too low, minimum value is 1")
         }
-        let curveDistance = max(curveDistance, 1)
-        var (vertices, indices) = generatePathVerts(path, width, curvePoints, curveDistance)
+        var (vertices, indices) = generatePathVerts(path, properties: pathProperties)
         let (arr, pathLength) = MeshResource.distancesBetweenValues(of: vertices)
+        let texDivY = pathProperties.textureMapping == .zeroToOne ? pathLength : 1
 
         for (idx, lenVal) in arr.enumerated() {
-            vertices[idx * 2].uv = [0, lenVal / pathLength]
-            vertices[idx * 2 + 1].uv = [1, lenVal / pathLength]
+            vertices[idx * 2].uv = [0, lenVal / texDivY]
+            vertices[idx * 2 + 1].uv = [1, lenVal / texDivY]
         }
 
         let meshDescr = vertices.generateMeshDescriptor(with: indices)
