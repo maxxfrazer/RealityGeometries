@@ -17,6 +17,7 @@ jobs:
     - uses: actions/checkout@v1
     - name: Build Package
       run: |
+        sudo xcode-select --switch /Applications/Xcode_13.0.app/Contents/Developer
         swift package generate-xcodeproj
         xcodebuild clean build -project $PROJECT -scheme $SCHEME -sdk $SDK CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO ONLY_ACTIVE_ARCH=NO
       env:
