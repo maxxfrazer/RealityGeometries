@@ -75,15 +75,15 @@ extension MeshResource {
         var lowerCapVertices = [CompleteVertex]()
 
         let hyp = sqrtf(radius * radius + height * height)
-        let cone_x = radius / hyp
-        let cone_y = -height / hyp
+        let coneNormX = radius / hyp
+        let coneNormY = height / hyp
         // create vertices for all sides of the cylinder
         for side in 0...sides {
             let cosTheta = cos(theta)
             let sinTheta = sin(theta)
 
             let lowerPosition: SIMD3<Float> = [radius * cosTheta, -height / 2, radius * sinTheta]
-            let coneEdgeNormal: SIMD3<Float> = [-cone_y * cosTheta, cone_x, -cone_y * sinTheta]
+            let coneEdgeNormal: SIMD3<Float> = [coneNormY * cosTheta, coneNormX, coneNormY * sinTheta]
 
             let bottomVertex = CompleteVertex(
                 position: lowerPosition,
