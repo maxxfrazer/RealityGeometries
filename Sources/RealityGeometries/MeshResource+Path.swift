@@ -11,7 +11,7 @@ import os
 
 extension MeshResource {
 
-    /// Create your path (triangle strip) from a series of `SIMD3<Float>` points
+    /// Create your path (triangle strip) from a series of `SIMD3<Float>` points 
     ///
     /// This path is assumed all normals facing directly up
     /// in the positive Y axis for now.
@@ -21,7 +21,7 @@ extension MeshResource {
     ///   - pathProperties: Properties of the path, including width and corner behaviour.
     /// - Returns: A new MeshResource representing the path for use with any RealityKit Application, and path length.
     public static func generatePath(
-        _ points: [SIMD3<Float>], pathProperties: PathProperties
+        _ points: [SIMD3<Float>], pathProperties: PathProperties = .init()
     ) throws -> (mesh: MeshResource?, pathLength: Float) {
         let (meshDesc, length) = self.pathDescriptor(
             path: points, pathProperties: pathProperties
@@ -35,13 +35,26 @@ extension MeshResource {
     /// Properties relating to the path being created by MeshResource.generatePath
     public struct PathProperties {
         /// Width of your path (default 0.5).
-        public var width: Float = 0.5
+        public var width: Float
         /// Number of points to make the curve at any turn in the path, default to 8. 0 will make sharp corners.
-        public var curvePoints: Float = 8
+        public var curvePoints: Float
         /// Distance from the centre of the path to the inner edge of the curve radius.
-        public var curveDistance: Float = 1.5
+        public var curveDistance: Float
         /// Type of texture mapping for the path. Default `.zeroToOne`
-        public var textureMapping: PathTextureMapping = .zeroToOne
+        public var textureMapping: PathTextureMapping
+
+        /// Initialise the PathProperties for a generated Path
+        public init(
+            width: Float = 0.5,
+            curvePoints: Float = 8,
+            curveDistance: Float = 1.5,
+            textureMapping: PathTextureMapping = .zeroToOne
+        ) {
+            self.width = width
+            self.curvePoints = curvePoints
+            self.curveDistance = curveDistance
+            self.textureMapping = textureMapping
+        }
     }
     /// Type of texture mapping for the path.
     public enum PathTextureMapping {

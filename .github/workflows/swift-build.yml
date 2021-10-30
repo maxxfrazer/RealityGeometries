@@ -18,8 +18,8 @@ jobs:
     - name: Build Package
       run: |
         sudo xcode-select --switch $DEVELOPER_DIR
-        xcodebuild -scheme $SCHEME -destination generic/platform=iOS | xcpretty
+        xcodebuild -scheme $SCHEME -destination $DESTINATION | xcpretty
       env:
         DEVELOPER_DIR: /Applications/Xcode_13.0.app/Contents/Developer
         SCHEME: RealityGeometries
-        SDK: iphoneos
+        DESTINATION: generic/platform=iOS

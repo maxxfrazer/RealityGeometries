@@ -122,7 +122,7 @@ extension MeshResource {
         )
     }
 
-    /// Creates a new cone mesh with the specified values
+    /// Creates a new cone mesh with the specified values 🍦
     /// - Parameters:
     ///   - radius: Radius of the code base
     ///   - height: Height of the code from base to tip
