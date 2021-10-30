@@ -83,11 +83,11 @@ extension MeshResource {
             let sinTheta = sin(theta)
 
             let lowerPosition: SIMD3<Float> = [radius * cosTheta, -height / 2, radius * sinTheta]
-            let coneEdgeNormal: SIMD3<Float> = [coneNormY * cosTheta, coneNormX, coneNormY * sinTheta]
+            let coneBottomNormal: SIMD3<Float> = [coneNormY * cosTheta, coneNormX, coneNormY * sinTheta]
 
             let bottomVertex = CompleteVertex(
                 position: lowerPosition,
-                normal: coneEdgeNormal,
+                normal: coneBottomNormal,
                 uv: [uStep * Float(side), 0]
             )
 
@@ -100,10 +100,15 @@ extension MeshResource {
                 normal: [0, -1, 0], uv: [cosTheta + 1, sinTheta + 1] / 2)
             )
 
+            let coneTopNormal: SIMD3<Float> = [
+                coneNormY * cos(theta + thetaInc / 2), coneNormX,
+                coneNormY * sin(theta + thetaInc / 2)
+            ]
+
             // add vertex for top of the cone
             let topVertex = CompleteVertex(
                 position: [0, height / 2, 0],
-                normal: coneEdgeNormal, uv: [0.5, 1]
+                normal: coneTopNormal, uv: [0.5, 1]
             )
             upperEdgeVertices.append(topVertex)
 
