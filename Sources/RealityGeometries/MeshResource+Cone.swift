@@ -74,26 +74,24 @@ extension MeshResource {
         // bottom edge vertices
         var lowerCapVertices = [CompleteVertex]()
 
+        let hyp = sqrtf(radius * radius + height * height)
+        let cone_x = radius / hyp
+        let cone_y = -height / hyp
         // create vertices for all sides of the cylinder
         for side in 0...sides {
             let cosTheta = cos(theta)
             let sinTheta = sin(theta)
 
-            let lowerPosition: SIMD3<Float> = [
-                radius * cosTheta, -height / 2, radius * sinTheta
-            ]
+            let lowerPosition: SIMD3<Float> = [radius * cosTheta, -height / 2, radius * sinTheta]
+            let coneEdgeNormal: SIMD3<Float> = [-cone_y * cosTheta, cone_x, -cone_y * sinTheta]
 
-            let lowerNormal = cross(
-                SIMD3<Float>(-sinTheta, 0, cosTheta),
-                SIMD3<Float>(0, 1, 0) - SIMD3<Float>(cosTheta, 0, sinTheta)
-            ).normalised
             let bottomVertex = CompleteVertex(
                 position: lowerPosition,
-                normal: lowerNormal,
+                normal: coneEdgeNormal,
                 uv: [uStep * Float(side), 0]
             )
 
-            // add vertex for bottom side of cylinder, facing out
+            // add vertex for bottom side of cone
             vertices.append(bottomVertex)
 
             // add vertex for bottom side facing down
@@ -102,16 +100,10 @@ extension MeshResource {
                 normal: [0, -1, 0], uv: [cosTheta + 1, sinTheta + 1] / 2)
             )
 
-            let cosThetaHalf = cos(theta + thetaInc / 2)
-            let sinThetaHalf = sin(theta + thetaInc / 2)
-            let topNormal = cross(
-                SIMD3<Float>(-sinThetaHalf, 0, cosThetaHalf),
-                SIMD3<Float>(0, 1, 0) - SIMD3<Float>(cosThetaHalf, 0, sinThetaHalf)
-            ).normalised
-            // add vertex for top side facing out
+            // add vertex for top of the cone
             let topVertex = CompleteVertex(
                 position: [0, height / 2, 0],
-                normal: topNormal, uv: [0.5, 1]
+                normal: coneEdgeNormal, uv: [0.5, 1]
             )
             upperEdgeVertices.append(topVertex)
 
