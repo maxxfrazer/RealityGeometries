@@ -1,5 +1,5 @@
 //
-//  File.swift
+//  MeshResource+Cone.swift
 //  
 //
 //  Created by Max Cobb on 12/06/2021.
@@ -32,9 +32,38 @@ extension MeshResource {
         return (indices, materialIndices)
     }
 
+    fileprivate struct ConeVertices {
+        var lowerEdge: [CompleteVertex]
+        var upperEdge: [CompleteVertex]
+        var lowerCap: [CompleteVertex]
+        var combinedVerts: [CompleteVertex]?
+        var indices: [UInt32]?
+        var materialIndices: [UInt32]?
+
+        mutating func calculateDetails(
+            height: Float, sides: Int, splitFaces: Bool
+        ) -> Bool {
+            let halfHeight = height / 2
+            var vertices = lowerEdge
+            vertices.append(contentsOf: upperEdge)
+
+            let lowerCenterIndex = UInt32(vertices.count)
+            vertices.append(CompleteVertex(
+                position: [0, -halfHeight, 0], normal: [0, -1, 0], uv: [0.5, 0.5]
+            ))
+
+            vertices.append(contentsOf: lowerCap)
+            self.combinedVerts = vertices
+            (self.indices, self.materialIndices) = coneIndices(
+                sides, lowerCenterIndex, splitFaces
+            )
+            return true
+        }
+    }
+
     fileprivate static func coneVertices(
         _ sides: Int, _ radius: Float, _ height: Float
-    ) -> ([CompleteVertex], [CompleteVertex], [CompleteVertex]) {
+    ) -> ConeVertices {
         var theta: Float = 0
         let thetaInc = 2 * .pi / Float(sides)
         let uStep: Float = 1 / Float(sides)
@@ -45,26 +74,24 @@ extension MeshResource {
         // bottom edge vertices
         var lowerCapVertices = [CompleteVertex]()
 
+        let hyp = sqrtf(radius * radius + height * height)
+        let coneNormX = radius / hyp
+        let coneNormY = height / hyp
         // create vertices for all sides of the cylinder
         for side in 0...sides {
             let cosTheta = cos(theta)
             let sinTheta = sin(theta)
 
-            let lowerPosition: SIMD3<Float> = [
-                radius * cosTheta, -height / 2, radius * sinTheta
-            ]
+            let lowerPosition: SIMD3<Float> = [radius * cosTheta, -height / 2, radius * sinTheta]
+            let coneBottomNormal: SIMD3<Float> = [coneNormY * cosTheta, coneNormX, coneNormY * sinTheta]
 
-            let lowerNormal = cross(
-                SIMD3<Float>(-sinTheta, 0, cosTheta),
-                SIMD3<Float>(0, 1, 0) - SIMD3<Float>(cosTheta, 0, sinTheta)
-            ).normalised
             let bottomVertex = CompleteVertex(
                 position: lowerPosition,
-                normal: lowerNormal,
+                normal: coneBottomNormal,
                 uv: [uStep * Float(side), 0]
             )
 
-            // add vertex for bottom side of cylinder, facing out
+            // add vertex for bottom side of cone
             vertices.append(bottomVertex)
 
             // add vertex for bottom side facing down
@@ -73,25 +100,26 @@ extension MeshResource {
                 normal: [0, -1, 0], uv: [cosTheta + 1, sinTheta + 1] / 2)
             )
 
-            let cosThetaHalf = cos(theta + thetaInc / 2)
-            let sinThetaHalf = sin(theta + thetaInc / 2)
-            let topNormal = cross(
-                SIMD3<Float>(-sinThetaHalf, 0, cosThetaHalf),
-                SIMD3<Float>(0, 1, 0) - SIMD3<Float>(cosThetaHalf, 0, sinThetaHalf)
-            ).normalised
-            // add vertex for top side facing out
+            let coneTopNormal: SIMD3<Float> = [
+                coneNormY * cos(theta + thetaInc / 2), coneNormX,
+                coneNormY * sin(theta + thetaInc / 2)
+            ]
+
+            // add vertex for top of the cone
             let topVertex = CompleteVertex(
                 position: [0, height / 2, 0],
-                normal: topNormal, uv: [0.5, 1]
+                normal: coneTopNormal, uv: [0.5, 1]
             )
             upperEdgeVertices.append(topVertex)
 
             theta += thetaInc
         }
-        return (vertices, upperEdgeVertices, lowerCapVertices)
+        return .init(
+            lowerEdge: vertices, upperEdge: upperEdgeVertices, lowerCap: lowerCapVertices
+        )
     }
 
-    /// Creates a new cone mesh with the specified values
+    /// Creates a new cone mesh with the specified values 🍦
     /// - Parameters:
     ///   - radius: Radius of the code base
     ///   - height: Height of the code from base to tip
@@ -102,30 +130,17 @@ extension MeshResource {
         radius: Float, height: Float, sides: Int = 24, splitFaces: Bool = false
     ) throws -> MeshResource {
         assert(sides > 2, "Sides must be an integer above 2")
-        let halfHeight = height / 2
-
         // first vertices added to vertices will be bottom edges
         // upperEdgeVertices are all top edge vertices of the cylinder
         // lowerCapVertices are the bottom edge vertices
-        var (
-            vertices, upperEdgeVertices, lowerCapVertices
-        ) = coneVertices(sides, radius, height)
-
-        vertices.append(contentsOf: upperEdgeVertices)
-
-        let lowerCenterIndex = UInt32(vertices.count)
-        vertices.append(CompleteVertex(
-            position: [0, -halfHeight, 0], normal: [0, -1, 0], uv: [0.5, 0.5]
-        ))
-
-        vertices.append(contentsOf: lowerCapVertices)
-
-        let (indices, materialIndices) = coneIndices(
-            sides, lowerCenterIndex, splitFaces
-        )
-
-        let meshDescr = vertices.generateMeshDescriptor(
-            with: indices, materials: materialIndices
+        var coneVerties = coneVertices(sides, radius, height)
+        if !coneVerties.calculateDetails(
+            height: height, sides: sides, splitFaces: splitFaces
+        ) {
+            assertionFailure("Could not calculate cone")
+        }
+        let meshDescr = coneVerties.combinedVerts!.generateMeshDescriptor(
+            with: coneVerties.indices!, materials: coneVerties.materialIndices!
         )
         return try MeshResource.generate(from: [meshDescr])
     }

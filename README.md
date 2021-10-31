@@ -10,5 +10,7 @@ RealityGeometries is a solution to increase the basic mesh offering from Reality
 - Cylinder
 - Cone
 - Plane (with more vertices)
+- Path
+- Torus
 
 This repository is open to pull requests as well as feature requests.

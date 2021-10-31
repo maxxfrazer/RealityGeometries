@@ -1,5 +1,5 @@
 //
-//  File.swift
+//  MeshResource+Planes.swift
 //  
 //
 //  Created by Max Cobb on 11/06/2021.
@@ -8,7 +8,7 @@
 import RealityKit
 
 extension MeshResource {
-    /// Creates a new plane mesh with the specified values.
+    /// Creates a new plane mesh with the specified values. 
     /// - Parameters:
     ///   - width: Width of the output plane
     ///   - depth: Depth of the output plane
@@ -23,7 +23,6 @@ extension MeshResource {
         var textureMap: [SIMD2<Float>] = []
         for x_v in 0..<(vertices.0) {
             let vertexCounts = meshPositions.count
-            print(vertexCounts)
             for y_v in 0..<(vertices.1) {
                 meshPositions.append([
                     (Float(x_v) / Float(vertices.0 - 1) - 0.5) * width,

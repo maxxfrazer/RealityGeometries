@@ -1,5 +1,5 @@
 //
-//  File.swift
+//  MeshResource+Cylinder.swift
 //  
 //
 //  Created by Max Cobb on 12/06/2021.
@@ -41,9 +41,41 @@ extension MeshResource {
         return (indices, materialIndices)
     }
 
+    fileprivate struct CylinderVertices {
+        var lowerEdge: [CompleteVertex]
+        var upperEdge: [CompleteVertex]
+        var lowerCap: [CompleteVertex]
+        var upperCap: [CompleteVertex]
+        var combinedVerts: [CompleteVertex]?
+        var indices: [UInt32]?
+        var materialIndices: [UInt32]?
+        mutating func calculateCylinderDetails(height: Float, sides: Int, splitFaces: Bool) -> Bool {
+            let halfHeight = height / 2
+            var combinedVerts: [CompleteVertex] = lowerEdge
+            combinedVerts.append(contentsOf: upperEdge)
+
+            let lowerCenterIndex = UInt32(combinedVerts.count)
+            combinedVerts.append(CompleteVertex(
+                position: [0, -halfHeight, 0], normal: [0, -1, 0], uv: [0.5, 0.5]
+            ))
+
+            combinedVerts.append(contentsOf: lowerCap)
+            let upperCenterIndex = UInt32(combinedVerts.count)
+            combinedVerts.append(CompleteVertex(
+                position: [0, halfHeight, 0], normal: [0, 1, 0], uv: [0.5, 0.5]
+            ))
+            combinedVerts.append(contentsOf: upperCap)
+            self.combinedVerts = combinedVerts
+            (self.indices, self.materialIndices) = cylinderIndices(
+                sides, lowerCenterIndex, upperCenterIndex, splitFaces
+            )
+            return true
+        }
+    }
+
     fileprivate static func cylinderVertices(
         _ sides: Int, _ radius: Float, _ height: Float
-    ) -> ([CompleteVertex], [CompleteVertex], [CompleteVertex], [CompleteVertex]) {
+    ) -> CylinderVertices {
         var theta: Float = 0
         let normalizeMult = 1 / sqrt(radius)
         let thetaInc = 2 * .pi / Float(sides)
@@ -95,7 +127,10 @@ extension MeshResource {
 
             theta += thetaInc
         }
-        return (vertices, upperEdgeVertices, lowerCapVertices, upperCapVertices)
+        return CylinderVertices(
+            lowerEdge: vertices, upperEdge: upperEdgeVertices,
+            lowerCap: lowerCapVertices, upperCap: upperCapVertices
+        )
     }
 
     /// Creates a new cylinder mesh with the specified values
@@ -110,36 +145,18 @@ extension MeshResource {
     ) throws -> MeshResource {
         assert(sides > 2, "Sides must be an integer above 2")
 
-        let halfHeight = height / 2
-
         // first vertices added to vertices will be bottom edges
         // upperEdgeVertices are all top edge vertices of the cylinder
         // lowerCapVertices are the bottom edge vertices
         // upperCapVertices are the top edge vertices
-        var (
-            vertices, upperEdgeVertices, lowerCapVertices, upperCapVertices
-        ) = cylinderVertices(sides, radius, height)
-
-        vertices.append(contentsOf: upperEdgeVertices)
-
-        let lowerCenterIndex = UInt32(vertices.count)
-        vertices.append(CompleteVertex(
-            position: [0, -halfHeight, 0], normal: [0, -1, 0], uv: [0.5, 0.5]
-        ))
-
-        vertices.append(contentsOf: lowerCapVertices)
-        let upperCenterIndex = UInt32(vertices.count)
-        vertices.append(CompleteVertex(
-            position: [0, halfHeight, 0], normal: [0, 1, 0], uv: [0.5, 0.5]
-        ))
-        vertices.append(contentsOf: upperCapVertices)
-
-        let (indices, materialIndices) = cylinderIndices(
-            sides, lowerCenterIndex, upperCenterIndex, splitFaces
-        )
-
-        let meshDescr = vertices.generateMeshDescriptor(
-            with: indices, materials: materialIndices
+        var cylinderVerts = cylinderVertices(sides, radius, height)
+        if !cylinderVerts.calculateCylinderDetails(
+            height: height, sides: sides, splitFaces: splitFaces
+        ) {
+            assertionFailure("Cannot calculate cylinder")
+        }
+        let meshDescr = cylinderVerts.combinedVerts!.generateMeshDescriptor(
+            with: cylinderVerts.indices!, materials: cylinderVerts.materialIndices!
         )
         return try MeshResource.generate(from: [meshDescr])
     }
