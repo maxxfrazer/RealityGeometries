@@ -9,20 +9,23 @@ import RealityKit
 
 extension MeshResource {
     fileprivate static func coneIndices(
-        _ sides: Int, _ lowerCenterIndex: UInt32, _ splitFaces: Bool
+        _ sides: Int, _ lowerCenterIndex: UInt32, _ splitFaces: Bool,
+        _ smoothNormals: Bool
     ) -> ([UInt32], [UInt32]) {
         var indices: [UInt32] = []
         var materialIndices: [UInt32] = []
-        for side in 0..<sides {
-            let bottomLeft = UInt32(side)
-            let bottomRight = UInt32(side + 1)
-            let topVertex = UInt32(side + sides + 1)
+        let uiSides = UInt32(sides) * (smoothNormals ? 1 : 2)
+        for side in 0..<UInt32(sides) {
+            let uiSideSmooth = side * (smoothNormals ? 1 : 2)
+            let bottomLeft = uiSideSmooth
+            let bottomRight = uiSideSmooth + 1
+            let topVertex = side + uiSides + 1
 
             // First triangle of side
             indices.append(contentsOf: [bottomLeft, topVertex, bottomRight])
 
             // Add bottom cap triangle
-            indices.append(contentsOf: [0, UInt32(side) + 1, UInt32(side) + 2].map { $0 + lowerCenterIndex })
+            indices.append(contentsOf: [0, side + 1, side + 2].map { $0 + lowerCenterIndex })
 
             if splitFaces {
                 materialIndices.append(0)
@@ -39,12 +42,14 @@ extension MeshResource {
         var combinedVerts: [CompleteVertex]?
         var indices: [UInt32]?
         var materialIndices: [UInt32]?
+        var smoothNormals: Bool
 
         mutating func calculateDetails(
             height: Float, sides: Int, splitFaces: Bool
         ) -> Bool {
             let halfHeight = height / 2
             var vertices = lowerEdge
+            print(lowerEdge.count)
             vertices.append(contentsOf: upperEdge)
 
             let lowerCenterIndex = UInt32(vertices.count)
@@ -55,14 +60,14 @@ extension MeshResource {
             vertices.append(contentsOf: lowerCap)
             self.combinedVerts = vertices
             (self.indices, self.materialIndices) = coneIndices(
-                sides, lowerCenterIndex, splitFaces
+                sides, lowerCenterIndex, splitFaces, self.smoothNormals
             )
             return true
         }
     }
 
     fileprivate static func coneVertices(
-        _ sides: Int, _ radius: Float, _ height: Float
+        _ sides: Int, _ radius: Float, _ height: Float, _ smoothNormals: Bool = false
     ) -> ConeVertices {
         var theta: Float = 0
         let thetaInc = 2 * .pi / Float(sides)
@@ -85,9 +90,19 @@ extension MeshResource {
             let lowerPosition: SIMD3<Float> = [radius * cosTheta, -height / 2, radius * sinTheta]
             let coneBottomNormal: SIMD3<Float> = [coneNormY * cosTheta, coneNormX, coneNormY * sinTheta]
 
+            if side != 0, !smoothNormals {
+                vertices.append(CompleteVertex(
+                    position: lowerPosition,
+                    normal: [coneNormY * cos(theta - thetaInc / 2), coneNormX, coneNormY * sin(theta - thetaInc / 2)],
+                    uv: [uStep * Float(side), 0]
+                ))
+            }
+
             let bottomVertex = CompleteVertex(
                 position: lowerPosition,
-                normal: coneBottomNormal,
+                normal: smoothNormals ? coneBottomNormal : [
+                    coneNormY * cos(theta + thetaInc / 2), coneNormX, coneNormY * sin(theta + thetaInc / 2)
+                ],
                 uv: [uStep * Float(side), 0]
             )
 
@@ -115,7 +130,7 @@ extension MeshResource {
             theta += thetaInc
         }
         return .init(
-            lowerEdge: vertices, upperEdge: upperEdgeVertices, lowerCap: lowerCapVertices
+            lowerEdge: vertices, upperEdge: upperEdgeVertices, lowerCap: lowerCapVertices, smoothNormals: smoothNormals
         )
     }
 
@@ -125,15 +140,18 @@ extension MeshResource {
     ///   - height: Height of the code from base to tip
     ///   - sides: How many sides the cone should have, default is 24, minimum is 3
     ///   - splitFaces: A Boolean you set to true to indicate that vertices shouldn’t be merged.
+    ///   - smoothNormals: Whether to smooth the normals. Good for high numbers of sides to give a rounder shape.
+    ///                    Smoothed normal setting also reduces the total number of vertices
     /// - Returns: A cone mesh
     public static func generateCone(
-        radius: Float, height: Float, sides: Int = 24, splitFaces: Bool = false
+        radius: Float, height: Float, sides: Int = 24, splitFaces: Bool = false,
+        smoothNormals: Bool
     ) throws -> MeshResource {
         assert(sides > 2, "Sides must be an integer above 2")
         // first vertices added to vertices will be bottom edges
         // upperEdgeVertices are all top edge vertices of the cylinder
         // lowerCapVertices are the bottom edge vertices
-        var coneVerties = coneVertices(sides, radius, height)
+        var coneVerties = coneVertices(sides, radius, height, smoothNormals)
         if !coneVerties.calculateDetails(
             height: height, sides: sides, splitFaces: splitFaces
         ) {
