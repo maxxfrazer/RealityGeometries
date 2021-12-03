@@ -9,3 +9,4 @@ identifier_name:
     warning: 1
 excluded:
   - RealityGeometries+Example
+  - Playgrounds/*
