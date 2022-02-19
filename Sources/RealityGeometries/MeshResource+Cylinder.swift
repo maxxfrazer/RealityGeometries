@@ -118,7 +118,7 @@ extension MeshResource {
             // add vertex for bottom side facing down
             lowerCapVertices.append(CompleteVertex(
                 position: bottomVertex.position,
-                normal: [0, -1, 0], uv: [1 - cosTheta, sinTheta + 1] / 2)
+                normal: [0, -1, 0], uv: [cosTheta + 1, sinTheta + 1] / 2)
             )
 
             if side != 0, !smoothNormals {
