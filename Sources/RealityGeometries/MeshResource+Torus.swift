@@ -31,7 +31,7 @@ extension MeshResource {
                     currentradius * sinf(iAngle * dToR),
                     zval
                 ]
-                var uv: SIMD2<Float> = [iAngle / 360, 2 * jAngle / 360 - 1]
+                var uv: SIMD2<Float> = [1 - iAngle / 360, 2 * jAngle / 360 - 1]
                 if uv.y < 0 { uv.y *= -1 }
                 allVertices.append(CompleteVertex(position: vertexPos, normal: normVal, uv: uv))
                 iAngle += angleIncs

@@ -94,7 +94,7 @@ extension MeshResource {
                 vertices.append(CompleteVertex(
                     position: lowerPosition,
                     normal: [coneNormY * cos(theta - thetaInc / 2), coneNormX, coneNormY * sin(theta - thetaInc / 2)],
-                    uv: [uStep * Float(side), 0]
+                    uv: [1 - uStep * Float(side), 0]
                 ))
             }
 
@@ -103,7 +103,7 @@ extension MeshResource {
                 normal: smoothNormals ? coneBottomNormal : [
                     coneNormY * cos(theta + thetaInc / 2), coneNormX, coneNormY * sin(theta + thetaInc / 2)
                 ],
-                uv: [uStep * Float(side), 0]
+                uv: [1 - uStep * Float(side), 0]
             )
 
             // add vertex for bottom side of cone
@@ -112,7 +112,7 @@ extension MeshResource {
             // add vertex for bottom side facing down
             lowerCapVertices.append(CompleteVertex(
                 position: bottomVertex.position,
-                normal: [0, -1, 0], uv: [cosTheta + 1, sinTheta + 1] / 2)
+                normal: [0, -1, 0], uv: [1 - cosTheta, sinTheta + 1] / 2)
             )
 
             let coneTopNormal: SIMD3<Float> = [
@@ -123,7 +123,7 @@ extension MeshResource {
             // add vertex for top of the cone
             let topVertex = CompleteVertex(
                 position: [0, height / 2, 0],
-                normal: coneTopNormal, uv: [0.5, 1]
+                normal: coneTopNormal, uv: [1 - uStep * (Float(side) + 0.5), 1]
             )
             upperEdgeVertices.append(topVertex)
 
@@ -145,7 +145,7 @@ extension MeshResource {
     /// - Returns: A cone mesh
     public static func generateCone(
         radius: Float, height: Float, sides: Int = 24, splitFaces: Bool = false,
-        smoothNormals: Bool
+        smoothNormals: Bool = false
     ) throws -> MeshResource {
         assert(sides > 2, "Sides must be an integer above 2")
         // first vertices added to vertices will be bottom edges
