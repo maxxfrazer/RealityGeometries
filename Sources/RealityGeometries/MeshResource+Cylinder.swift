@@ -100,7 +100,7 @@ extension MeshResource {
                 vertices.append(CompleteVertex(
                     position: lowerPosition,
                     normal: [cos(theta - thetaInc / 2), 0, sin(theta - thetaInc / 2)],
-                    uv: [uStep * Float(side), 0]
+                    uv: [1 - uStep * Float(side), 0]
                 ))
             }
 
@@ -109,7 +109,7 @@ extension MeshResource {
                 normal: [
                     cos(theta + (smoothNormals ? 0 : thetaInc / 2)), 0,
                     sin(theta + (smoothNormals ? 0 : thetaInc / 2))
-                ], uv: [uStep * Float(side), 0]
+                ], uv: [1 - uStep * Float(side), 0]
             )
 
             // add vertex for bottom side of cylinder, facing out
@@ -125,19 +125,19 @@ extension MeshResource {
                 upperEdgeVertices.append(CompleteVertex(
                     position: lowerPosition + [0, height, 0],
                     normal: [cos(theta - thetaInc / 2), 0, sin(theta - thetaInc / 2)],
-                    uv: [uStep * Float(side), 1]
+                    uv: [1 - uStep * Float(side), 1]
                 ))
             }
 
             // add vertex for top side facing out
             let topVertex = CompleteVertex(
                 position: lowerPosition + [0, height, 0],
-                normal: bottomVertex.normal, uv: [uStep * Float(side), 1]
+                normal: bottomVertex.normal, uv: [1 - uStep * Float(side), 1]
             )
             upperEdgeVertices.append(topVertex)
 
             upperCapVertices.append(CompleteVertex(
-                position: topVertex.position, normal: [0, 1, 0], uv: [cosTheta + 1, sinTheta + 1] / 2)
+                position: topVertex.position, normal: [0, 1, 0], uv: [1 - cosTheta, sinTheta + 1] / 2)
             )
 
             theta += thetaInc
