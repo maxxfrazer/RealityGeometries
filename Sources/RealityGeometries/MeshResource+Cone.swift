@@ -8,6 +8,36 @@
 import RealityKit
 
 extension MeshResource {
+
+    /// Creates a new cone mesh with the specified values 🍦
+    /// - Parameters:
+    ///   - radius: Radius of the code base
+    ///   - height: Height of the code from base to tip
+    ///   - sides: How many sides the cone should have, default is 24, minimum is 3
+    ///   - splitFaces: A Boolean you set to true to indicate that vertices shouldn’t be merged.
+    ///   - smoothNormals: Whether to smooth the normals. Good for high numbers of sides to give a rounder shape.
+    ///                    Smoothed normal setting also reduces the total number of vertices
+    /// - Returns: A cone mesh
+    public static func generateCone(
+        radius: Float, height: Float, sides: Int = 24, splitFaces: Bool = false,
+        smoothNormals: Bool = false
+    ) throws -> MeshResource {
+        assert(sides > 2, "Sides must be an integer above 2")
+        // first vertices added to vertices will be bottom edges
+        // upperEdgeVertices are all top edge vertices of the cylinder
+        // lowerCapVertices are the bottom edge vertices
+        var coneVerties = coneVertices(sides, radius, height, smoothNormals)
+        if !coneVerties.calculateDetails(
+            height: height, sides: sides, splitFaces: splitFaces
+        ) {
+            assertionFailure("Could not calculate cone")
+        }
+        let meshDescr = coneVerties.combinedVerts!.generateMeshDescriptor(
+            with: coneVerties.indices!, materials: coneVerties.materialIndices!
+        )
+        return try MeshResource.generate(from: [meshDescr])
+    }
+
     fileprivate static func coneIndices(
         _ sides: Int, _ lowerCenterIndex: UInt32, _ splitFaces: Bool,
         _ smoothNormals: Bool
@@ -132,34 +162,5 @@ extension MeshResource {
         return .init(
             lowerEdge: vertices, upperEdge: upperEdgeVertices, lowerCap: lowerCapVertices, smoothNormals: smoothNormals
         )
-    }
-
-    /// Creates a new cone mesh with the specified values 🍦
-    /// - Parameters:
-    ///   - radius: Radius of the code base
-    ///   - height: Height of the code from base to tip
-    ///   - sides: How many sides the cone should have, default is 24, minimum is 3
-    ///   - splitFaces: A Boolean you set to true to indicate that vertices shouldn’t be merged.
-    ///   - smoothNormals: Whether to smooth the normals. Good for high numbers of sides to give a rounder shape.
-    ///                    Smoothed normal setting also reduces the total number of vertices
-    /// - Returns: A cone mesh
-    public static func generateCone(
-        radius: Float, height: Float, sides: Int = 24, splitFaces: Bool = false,
-        smoothNormals: Bool = false
-    ) throws -> MeshResource {
-        assert(sides > 2, "Sides must be an integer above 2")
-        // first vertices added to vertices will be bottom edges
-        // upperEdgeVertices are all top edge vertices of the cylinder
-        // lowerCapVertices are the bottom edge vertices
-        var coneVerties = coneVertices(sides, radius, height, smoothNormals)
-        if !coneVerties.calculateDetails(
-            height: height, sides: sides, splitFaces: splitFaces
-        ) {
-            assertionFailure("Could not calculate cone")
-        }
-        let meshDescr = coneVerties.combinedVerts!.generateMeshDescriptor(
-            with: coneVerties.indices!, materials: coneVerties.materialIndices!
-        )
-        return try MeshResource.generate(from: [meshDescr])
     }
 }
