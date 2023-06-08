@@ -1,5 +1,5 @@
 //
-//  MeshResource+Planes.swift
+//  RealityGeometry+Planes.swift
 //  
 //
 //  Created by Max Cobb on 11/06/2021.
@@ -7,8 +7,8 @@
 
 import RealityKit
 
-extension MeshResource {
-    /// Creates a new plane mesh with the specified values. 
+extension RealityGeometry {
+    /// Creates a new plane mesh with the specified values.
     /// - Parameters:
     ///   - width: Width of the output plane
     ///   - depth: Depth of the output plane

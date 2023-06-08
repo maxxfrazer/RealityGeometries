@@ -1,5 +1,5 @@
 //
-//  MeshResource+Cone.swift
+//  RealityGeometry+Cone.swift
 //  
 //
 //  Created by Max Cobb on 12/06/2021.
@@ -7,8 +7,7 @@
 
 import RealityKit
 
-extension MeshResource {
-
+extension RealityGeometry {
     /// Creates a new cone mesh with the specified values 🍦
     /// - Parameters:
     ///   - radius: Radius of the code base

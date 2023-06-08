@@ -1,5 +1,5 @@
 //
-//  MeshResource+Path.swift
+//  RealityGeometry+Path.swift
 //  
 //
 //  Created by Max Cobb on 15/10/2021.
@@ -9,8 +9,7 @@ import RealityKit
 import CoreGraphics
 import os
 
-extension MeshResource {
-
+extension RealityGeometry {
     /// Create your path (triangle strip) from a series of `SIMD3<Float>` points
     ///
     /// This path is assumed all normals facing directly up
@@ -93,7 +92,7 @@ extension MeshResource {
                 var bendAround = vert - (addVector * properties.curveDistance)
 
                 // replace this with quaternions when possible
-                if MeshResource.newTurning(points: Array(path[(index-1)...(index+1)])) < 0 { // left turn
+                if self.newTurning(points: Array(path[(index-1)...(index+1)])) < 0 { // left turn
                     bendAround = vert + (addVector * properties.curveDistance)
                     bentBy *= -1
                 }
@@ -133,7 +132,7 @@ extension MeshResource {
     ///   - path: Point from which to make the path.
     ///   - pathProperties: Properties of the path, including width and corner behaviour.
     /// - Returns: A new MeshDescriptor representing the path for use with any RealityKit Application, and path length.
-    public class func pathDescriptor(
+    public static func pathDescriptor(
         path: [SIMD3<Float>], pathProperties: PathProperties
     ) -> (MeshDescriptor?, Float) {
         if path.count < 2 {
@@ -143,7 +142,7 @@ extension MeshResource {
             os_log(.error, "curve distance is too low, minimum value is 1")
         }
         var (vertices, indices) = generatePathVerts(path, properties: pathProperties)
-        let (arr, pathLength) = MeshResource.distancesBetweenValues(of: vertices)
+        let (arr, pathLength) = self.distancesBetweenValues(of: vertices)
         let texDivY = pathProperties.textureMapping == .zeroToOne ? pathLength : 1
 
         for (idx, lenVal) in arr.enumerated() {

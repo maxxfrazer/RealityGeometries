@@ -1,5 +1,5 @@
 //
-//  MeshResource+Torus.swift
+//  RealityGeometry+Torus.swift
 //  
 //
 //  Created by Max Cobb on 25/10/2021.
@@ -7,7 +7,7 @@
 
 import RealityKit
 
-extension MeshResource {
+extension RealityGeometry {
     /// Create a new torus MeshResource 🍩
     /// - Parameters:
     ///   - sides: Number of segments in the toroidal direction (outer edge of the torus).

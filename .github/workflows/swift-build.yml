@@ -14,7 +14,7 @@ jobs:
   build:
     runs-on: macOS-11
     steps:
-    - uses: actions/checkout@v1
+    - uses: actions/checkout@v3
     - name: Build Package
       run: |
         sudo xcode-select --switch $DEVELOPER_DIR
@@ -23,3 +23,5 @@ jobs:
         DEVELOPER_DIR: /Applications/Xcode_13.0.app/Contents/Developer
         SCHEME: RealityGeometries
         DESTINATION: generic/platform=iOS
+    - name: lint
+      run: swiftlint

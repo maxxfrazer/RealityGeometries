@@ -11,7 +11,7 @@ import RealityFoundation
 
 final class Torus_Tests: XCTestCase {
     func testTorusGeometry() throws {
-        guard let testSimpleMesh = try? MeshResource.generateTorus(
+        guard let testSimpleMesh = try? RealityGeometry.generateTorus(
             sides: 32, csSides: 32, radius: 1, csRadius: 0.1
         ) else {
             XCTFail("Could not create simple mesh")
