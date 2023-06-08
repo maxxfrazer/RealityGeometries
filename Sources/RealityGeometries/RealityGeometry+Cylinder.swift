@@ -1,5 +1,5 @@
 //
-//  MeshResource+Cylinder.swift
+//  RealityGeometry+Cylinder.swift
 //  
 //
 //  Created by Max Cobb on 12/06/2021.
@@ -7,7 +7,38 @@
 
 import RealityKit
 
-extension MeshResource {
+extension RealityGeometry {
+    /// Creates a new cylinder mesh with the specified values 🛢️
+    /// - Parameters:
+    ///   - radius: Radius of the cylinder
+    ///   - height: Height of the cylinder
+    ///   - sides: How many sides the cone should have, default is 24, minimum is 3
+    ///   - splitFaces: A Boolean you set to true to indicate that vertices shouldn’t be merged.
+    ///   - smoothNormals: Whether to smooth the normals. Good for high numbers of sides to give a rounder shape.
+    ///                    Smoothed normal setting also reduces the total number of vertices
+    /// - Returns: A cylinder mesh.
+    public static func generateCylinder(
+        radius: Float, height: Float, sides: Int = 24,
+        splitFaces: Bool = false, smoothNormals: Bool = false
+    ) throws -> MeshResource {
+        assert(sides > 2, "Sides must be an integer above 2")
+
+        // first vertices added to vertices will be bottom edges
+        // upperEdgeVertices are all top edge vertices of the cylinder
+        // lowerCapVertices are the bottom edge vertices
+        // upperCapVertices are the top edge vertices
+        var cylinderVerts = cylinderVertices(sides, radius, height, smoothNormals)
+        if !cylinderVerts.calculateCylinderDetails(
+            height: height, sides: sides, splitFaces: splitFaces
+        ) {
+            assertionFailure("Cannot calculate cylinder")
+        }
+        let meshDescr = cylinderVerts.combinedVerts!.generateMeshDescriptor(
+            with: cylinderVerts.indices!, materials: cylinderVerts.materialIndices!
+        )
+        return try MeshResource.generate(from: [meshDescr])
+    }
+
     fileprivate static func cylinderIndices(
         _ sides: Int, _ lowerCenterIndex: UInt32,
         _ upperCenterIndex: UInt32, _ splitFaces: Bool, _ smoothNormals: Bool
@@ -146,36 +177,5 @@ extension MeshResource {
             lowerEdge: vertices, upperEdge: upperEdgeVertices, lowerCap: lowerCapVertices,
             upperCap: upperCapVertices, smoothNormals: smoothNormals
         )
-    }
-
-    /// Creates a new cylinder mesh with the specified values
-    /// - Parameters:
-    ///   - radius: Radius of the cylinder
-    ///   - height: Height of the cylinder
-    ///   - sides: How many sides the cone should have, default is 24, minimum is 3
-    ///   - splitFaces: A Boolean you set to true to indicate that vertices shouldn’t be merged.
-    ///   - smoothNormals: Whether to smooth the normals. Good for high numbers of sides to give a rounder shape.
-    ///                    Smoothed normal setting also reduces the total number of vertices
-    /// - Returns: A cylinder mesh.
-    public static func generateCylinder(
-        radius: Float, height: Float, sides: Int = 24,
-        splitFaces: Bool = false, smoothNormals: Bool = false
-    ) throws -> MeshResource {
-        assert(sides > 2, "Sides must be an integer above 2")
-
-        // first vertices added to vertices will be bottom edges
-        // upperEdgeVertices are all top edge vertices of the cylinder
-        // lowerCapVertices are the bottom edge vertices
-        // upperCapVertices are the top edge vertices
-        var cylinderVerts = cylinderVertices(sides, radius, height, smoothNormals)
-        if !cylinderVerts.calculateCylinderDetails(
-            height: height, sides: sides, splitFaces: splitFaces
-        ) {
-            assertionFailure("Cannot calculate cylinder")
-        }
-        let meshDescr = cylinderVerts.combinedVerts!.generateMeshDescriptor(
-            with: cylinderVerts.indices!, materials: cylinderVerts.materialIndices!
-        )
-        return try MeshResource.generate(from: [meshDescr])
     }
 }

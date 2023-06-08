@@ -1,5 +1,5 @@
 //
-//  MeshResource+Path.swift
+//  RealityGeometry+Path.swift
 //  
 //
 //  Created by Max Cobb on 15/10/2021.
@@ -9,9 +9,8 @@ import RealityKit
 import CoreGraphics
 import os
 
-extension MeshResource {
-
-    /// Create your path (triangle strip) from a series of `SIMD3<Float>` points 
+extension RealityGeometry {
+    /// Create your path (triangle strip) from a series of `SIMD3<Float>` points
     ///
     /// This path is assumed all normals facing directly up
     /// in the positive Y axis for now.
@@ -77,8 +76,8 @@ extension MeshResource {
                 // first point
                 addVector = SIMD3<Float>(path[index + 1].z - vert.z, 0, vert.x - path[index + 1].x)
             } else if index < maxIndex {
-                let toThis = (vert - path[index - 1]).flattened().normalized()
-                let fromThis = (path[index + 1] - vert).flattened().normalized()
+                let toThis = simd.normalize((vert - path[index - 1]).flattened())
+                let fromThis = simd.normalize((path[index + 1] - vert).flattened())
                 bentBy = fromThis.angleChange(to: toThis)
                 let resultant = (toThis + fromThis) / 2
                 addVector = SIMD3<Float>(resultant.z, 0, -resultant.x)
@@ -86,14 +85,14 @@ extension MeshResource {
                 // last point
                 addVector = SIMD3<Float>(vert.z - path[index - 1].z, 0, path[index - 1].x - vert.x)
             }
-            addVector = addVector.normalized() * (properties.width / 2)
+            addVector = simd.normalize(addVector) * (properties.width / 2)
             if properties.curvePoints > 0, path.count >= index + 2, bentBy > 0.001 {
                 let edge1 = vert - addVector
                 let edge2 = vert + addVector
                 var bendAround = vert - (addVector * properties.curveDistance)
 
                 // replace this with quaternions when possible
-                if MeshResource.newTurning(points: Array(path[(index-1)...(index+1)])) < 0 { // left turn
+                if self.newTurning(points: Array(path[(index-1)...(index+1)])) < 0 { // left turn
                     bendAround = vert + (addVector * properties.curveDistance)
                     bentBy *= -1
                 }
@@ -133,7 +132,7 @@ extension MeshResource {
     ///   - path: Point from which to make the path.
     ///   - pathProperties: Properties of the path, including width and corner behaviour.
     /// - Returns: A new MeshDescriptor representing the path for use with any RealityKit Application, and path length.
-    public class func pathDescriptor(
+    public static func pathDescriptor(
         path: [SIMD3<Float>], pathProperties: PathProperties
     ) -> (MeshDescriptor?, Float) {
         if path.count < 2 {
@@ -143,7 +142,7 @@ extension MeshResource {
             os_log(.error, "curve distance is too low, minimum value is 1")
         }
         var (vertices, indices) = generatePathVerts(path, properties: pathProperties)
-        let (arr, pathLength) = MeshResource.distancesBetweenValues(of: vertices)
+        let (arr, pathLength) = self.distancesBetweenValues(of: vertices)
         let texDivY = pathProperties.textureMapping == .zeroToOne ? pathLength : 1
 
         for (idx, lenVal) in arr.enumerated() {
@@ -174,7 +173,7 @@ extension MeshResource {
             let count = val * 2 + 1
             let lCenter = (arr[count].position + arr[count - 1].position) / 2
             let llCenter = (arr[count - 2].position + arr[count - 3].position) / 2
-            let newDistance = lCenter.distance(vector: llCenter)
+            let newDistance = simd.distance(lCenter, llCenter)
             totalDistance += Float(newDistance)
             return totalDistance
         }
@@ -196,8 +195,10 @@ fileprivate extension SIMD3 where SIMD3.Scalar == Float {
     /// - Parameter vector: vector to compare
     /// - Returns: angle between the vectors
     func angleChange(to vector: SIMD3<Scalar>) -> Float {
-        let dot = self.normalized().dot(vector: vector.normalized())
-        return acos(dot / sqrt(self.lenSq * vector.lenSq))
+
+        let dot = simd.dot(simd.normalize(self), simd.normalize(vector))
+
+        return acos(dot / sqrt(simd.length_squared(self) * simd.length_squared(vector)))
     }
 
     /// Given a point and origin, rotate along X/Z plane by radian amount
@@ -217,10 +218,6 @@ fileprivate extension SIMD3 where SIMD3.Scalar == Float {
             y: self.y,
             z: pointRepositionedXY[0] * sinAngle + pointRepositionedXY[1] * cosAngle + origin.z
         )
-    }
-    /// Returns the squared magnitude of the vector
-    var lenSq: Float {
-        return x*x + y*y + z*z
     }
 }
 
