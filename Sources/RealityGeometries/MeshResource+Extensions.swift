@@ -13,7 +13,10 @@ public extension MeshResource {
         radius: Float, height: Float, sides: Int = 24, splitFaces: Bool = false,
         smoothNormals: Bool = false
     ) throws -> MeshResource {
-        try RealityGeometry.generateCone(radius: radius, height: height, sides: sides, splitFaces: splitFaces, smoothNormals: smoothNormals)
+        try RealityGeometry.generateCone(
+            radius: radius, height: height, sides: sides,
+            splitFaces: splitFaces, smoothNormals: smoothNormals
+        )
     }
 
     @available(*, deprecated, renamed: "RealityGeometry.generateCylinder")
@@ -21,7 +24,10 @@ public extension MeshResource {
         radius: Float, height: Float, sides: Int = 24, splitFaces: Bool = false,
         smoothNormals: Bool = false
     ) throws -> MeshResource {
-        try RealityGeometry.generateCylinder(radius: radius, height: height, sides: sides, splitFaces: splitFaces, smoothNormals: smoothNormals)
+        try RealityGeometry.generateCylinder(
+            radius: radius, height: height, sides: sides,
+            splitFaces: splitFaces, smoothNormals: smoothNormals
+        )
     }
 
     @available(*, deprecated, renamed: "RealityGeometry.generatePath")

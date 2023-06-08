@@ -39,10 +39,10 @@ public extension RealityGeometry {
         points: [SIMD3<Float>], radius: Float, edges: Int = 12
     ) throws -> (MeshResource, Float) {
 
-        let (geomParts, indices, lineLength) = getAllLineParts(
+        guard let ((geomParts, indices), lineLength) = getAllLineParts(
             points: points, radius: radius,
             edges: edges
-        )
+        ) else { throw MeshError.invalidInput }
         if geomParts.isEmpty {
             return (try MeshResource.generate(from: []), lineLength)
         }
@@ -55,12 +55,11 @@ public extension RealityGeometry {
     ///   - start: Current direction of the vector
     ///   - end: Desired vector direction
     /// - Returns: Quaternion to be applied to the start to get the end.
-    fileprivate static func rotationBetween2Vectors(start: SIMD3<Float>, end: SIMD3<Float>) -> simd_quatf {
+    fileprivate static func vectorQuatDiff(start: SIMD3<Float>, end: SIMD3<Float>) -> simd_quatf {
         let angle = acos(simd.dot(start, end))
         let axis = simd.normalize(simd.cross(start, end))
         return simd_quatf(angle: angle, axis: axis)
     }
-
 
     fileprivate static func getCircularPoints(
         radius: Float, edges: Int,
@@ -81,6 +80,65 @@ public extension RealityGeometry {
         return verts
     }
 
+    fileprivate static func runAllPoints(
+        _ points: [SIMD3<Float>], _ radius: Float, _ edges: Int, _ lineLength: inout Float
+    ) -> ([CompleteVertex], [UInt32])? {
+        var trueNormals = [SIMD3<Float>](); var trueUVMap = [SIMD2<Float>]()
+        var trueVs = [SIMD3<Float>](); var trueInds = [UInt32](); var lastforward = SIMD3<Float>(0, 1, 0)
+        guard var lastLocation = points.first else { return nil }
+        var lineLength: Float = 0
+        var cPoints = self.getCircularPoints(radius: radius, edges: edges)
+        let textureXs = cPoints.enumerated().map { (val) -> Float in
+            return Float(val.offset) / Float(edges - 1)
+        }
+
+        for (index, point) in points.enumerated() {
+            let newRotation: simd_quatf!
+            if index == 0 {
+                let startDirection = simd.normalize(points[index + 1] - point)
+                cPoints = self.getCircularPoints(
+                    radius: radius, edges: edges,
+                    orientation: vectorQuatDiff(start: lastforward, end: startDirection))
+                lastforward = simd.normalize(startDirection)
+                newRotation = simd_quatf.init()
+            } else if index < points.count - 1 {
+                trueVs.append(contentsOf: Array(trueVs[(trueVs.count - edges * 2)...]))
+                trueUVMap.append(contentsOf: Array(trueUVMap[(trueUVMap.count - edges * 2)...]))
+                trueNormals.append(contentsOf: cPoints.map(simd.normalize))
+                newRotation = vectorQuatDiff(
+                    start: lastforward, end: simd.normalize(points[index + 1] - points[index]))
+            } else {
+                newRotation = vectorQuatDiff(
+                    start: lastforward, end: simd.normalize(points[index] - points[index - 1]))
+            }
+
+            if index > 0 {
+                let halfRotation = newRotation.split(by: 2)
+                // fallback and just apply the half rotation for the turn
+                if index < points.count - 1 { cPoints = cPoints.map { halfRotation.normalized.act($0) } }
+                lastforward = simd.normalize(simd.cross(cPoints[1], cPoints[0]))
+
+                lineLength += simd.distance(lastLocation, point)
+                trueNormals.append(contentsOf: cPoints.map(simd.normalize))
+                trueVs.append(contentsOf: cPoints.map { $0 + point })
+                lastLocation = point
+                trueUVMap.append(contentsOf: textureXs.map { [$0, lineLength] })
+                addCylinderVerts(to: &trueInds, startingAt: trueVs.count - edges * 4, edges: edges)
+                cPoints = cPoints.map { halfRotation.normalized.act($0) }
+                lastforward = simd.normalize(simd.cross(cPoints[1], cPoints[0]))
+            } else {
+                cPoints = cPoints.map { newRotation.act($0) }
+                lastforward = simd.normalize(simd.cross(cPoints[1], cPoints[0]))
+                trueNormals.append(contentsOf: cPoints.map(simd.normalize))
+                trueUVMap.append(contentsOf: textureXs.map { [$0, lineLength] })
+                trueVs.append(contentsOf: cPoints.map { $0 + point })
+            }
+        }
+        return (zip(zip(trueVs, trueNormals), trueUVMap).map {
+            CompleteVertex(position: $0.0.0, normal: $0.0.1, uv: $0.1)
+        }, trueInds)
+    }
+
     /// This function takes in all the geometry parameters to get the vertices, normals etc
     /// It's currently grossly long, needs cleaning up as a priority.
     ///
@@ -91,73 +149,14 @@ public extension RealityGeometry {
     /// - Returns: All the bits to create the geometry from and the length of the result
     internal static func getAllLineParts(
         points: [SIMD3<Float>], radius: Float, edges: Int = 12
-    ) -> (vertices: [CompleteVertex], indices: [UInt32], length: Float) {
-        if points.count < 2 {
-            return ([], [], 0)
-        }
-        var trueNormals = [SIMD3<Float>]()
-        var trueUVMap = [SIMD2<Float>]()
-        var trueVs = [SIMD3<Float>]()
-        var trueInds = [UInt32]()
+    ) -> ((vertices: [CompleteVertex], indices: [UInt32]), length: Float)? {
+        if points.count < 2 { return nil }
 
-        var lastforward = SIMD3<Float>(0, 1, 0)
-        var cPoints = self.getCircularPoints(radius: radius, edges: edges)
-        let textureXs = cPoints.enumerated().map { (val) -> Float in
-            return Float(val.offset) / Float(edges - 1)
-        }
-        guard var lastLocation = points.first else {
-            return ([], [], 0)
-        }
         var lineLength: Float = 0
-        for (index, point) in points.enumerated() {
-            let newRotation: simd_quatf!
-            if index == 0 {
-                let startDirection = simd.normalize(points[index + 1] - point)
-                cPoints = self.getCircularPoints(
-                    radius: radius, edges: edges, orientation:
-                        rotationBetween2Vectors(start: lastforward, end: startDirection)
-                )
-                lastforward = simd.normalize(startDirection)
-                newRotation = simd_quatf.init()
-            } else if index < points.count - 1 {
-                trueVs.append(contentsOf: Array(trueVs[(trueVs.count - edges * 2)...]))
-                trueUVMap.append(contentsOf: Array(trueUVMap[(trueUVMap.count - edges * 2)...]))
-                trueNormals.append(contentsOf: cPoints.map(simd.normalize))
-
-                newRotation = rotationBetween2Vectors(start: lastforward, end: simd.normalize(points[index + 1] - points[index]))
-            } else {
-                newRotation = rotationBetween2Vectors(start: lastforward, end: simd.normalize(points[index] - points[index - 1]))
-            }
-
-            if index > 0 {
-                let halfRotation: simd_quatf! = newRotation.split(by: 2)
-                // fallback and just apply the half rotation for the turn
-                if index < points.count - 1 {
-                    cPoints = cPoints.map { halfRotation.normalized.act($0) }
-                }
-                lastforward = simd.normalize(simd.cross(cPoints[1], cPoints[0]))
-
-                trueNormals.append(contentsOf: cPoints.map(simd.normalize))
-                trueVs.append(contentsOf: cPoints.map { $0 + point })
-                lineLength += simd.distance(lastLocation, point)
-                lastLocation = point
-                trueUVMap.append(contentsOf: textureXs.map { [$0, lineLength] })
-                addCylinderVerts(to: &trueInds, startingAt: trueVs.count - edges * 4, edges: edges)
-                cPoints = cPoints.map { halfRotation.normalized.act($0) }
-                lastforward = simd.normalize(simd.cross(cPoints[1], cPoints[0]))
-                //                        lastPartRotation = halfRotation
-            } else {
-                cPoints = cPoints.map { newRotation.act($0) }
-                lastforward = simd.normalize(simd.cross(cPoints[1], cPoints[0]))
-                trueNormals.append(contentsOf: cPoints.map(simd.normalize))
-                trueUVMap.append(contentsOf: textureXs.map { [$0, lineLength] })
-                trueVs.append(contentsOf: cPoints.map { $0 + point })
-
-            }
+        guard let (allVertices, trueInds) = runAllPoints(points, radius, edges, &lineLength) else {
+            return nil
         }
-        let allVertices = zip(zip(trueVs, trueNormals), trueUVMap).map { CompleteVertex(position: $0.0.0, normal: $0.0.1, uv: $0.1) }
-
-        return (allVertices, trueInds, lineLength)
+        return ((allVertices, trueInds), lineLength)
     }
 
     static private func addCylinderVerts(
@@ -176,4 +175,3 @@ public extension RealityGeometry {
 
     }
 }
-

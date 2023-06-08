@@ -7,6 +7,9 @@ identifier_name:
     - y_v
   min_length:
     warning: 1
+function_body_length:
+  warning: 60
+  error: 100
 excluded:
   - RealityGeometries+Example
   - Playgrounds/*
