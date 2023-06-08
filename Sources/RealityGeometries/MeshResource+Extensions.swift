@@ -50,4 +50,7 @@ public extension MeshResource {
     ) throws -> MeshResource {
         try RealityGeometry.generateTorus(sides: sides, csSides: csSides, radius: radius, csRadius: csRadius)
     }
+
+    @available(*, deprecated, renamed: "RealityGeometry.PathProperties")
+    typealias PathProperties = RealityGeometry.PathProperties
 }

@@ -11,7 +11,7 @@ import RealityFoundation
 
 final class DetailedPlane_Tests: XCTestCase {
     func testPlaneGeometry() throws {
-        guard let testSimpleMesh = try? MeshResource.generateDetailedPlane(width: 1, depth: 1, vertices: (2, 2)) else {
+        guard let testSimpleMesh = try? RealityGeometry.generateDetailedPlane(width: 1, depth: 1, vertices: (2, 2)) else {
             XCTFail("Could not create detailed plane")
             return
         }

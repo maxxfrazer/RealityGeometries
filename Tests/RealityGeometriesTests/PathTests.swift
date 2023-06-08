@@ -11,9 +11,9 @@ import RealityFoundation
 
 final class Path_Tests: XCTestCase {
     func testPathGeometry() throws {
-        guard let (testSimpleMesh, pathLen) = try? MeshResource.generatePath(
+        guard let (testSimpleMesh, pathLen) = try? RealityGeometry.generatePath(
             [.zero, [0, 0, 1], [1, 0, 1]],
-            pathProperties: MeshResource.PathProperties(width: 1, curvePoints: 0)),
+            pathProperties: RealityGeometry.PathProperties(width: 1, curvePoints: 0)),
             let pathMesh = testSimpleMesh
         else {
             XCTFail("Could not create simple mesh")

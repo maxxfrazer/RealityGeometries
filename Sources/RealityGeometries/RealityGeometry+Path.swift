@@ -31,7 +31,7 @@ extension RealityGeometry {
         return try (MeshResource.generate(from: [meshDesc]), length)
     }
 
-    /// Properties relating to the path being created by MeshResource.generatePath
+    /// Properties relating to the path being created by RealityGeometry.generatePath
     public struct PathProperties {
         /// Width of your path (default 0.5).
         public var width: Float
