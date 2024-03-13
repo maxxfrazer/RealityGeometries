@@ -127,7 +127,6 @@ public extension RealityGeometry {
                 cPoints = cPoints.map { halfRotation.normalized.act($0) }
                 lastforward = simd.normalize(simd.cross(cPoints[1], cPoints[0]))
             } else {
-                cPoints = cPoints.map { newRotation.act($0) }
                 lastforward = simd.normalize(simd.cross(cPoints[1], cPoints[0]))
                 trueNormals.append(contentsOf: cPoints.map(simd.normalize))
                 trueUVMap.append(contentsOf: textureXs.map { [$0, lineLength] })
