@@ -5,6 +5,7 @@
 //  Created by Max Cobb on 12/06/2021.
 //
 
+#if canImport(RealityKit)
 import RealityKit
 
 internal struct CompleteVertex {
@@ -36,3 +37,4 @@ internal extension Array where Element == CompleteVertex {
         return meshDescriptor
     }
 }
+#endif

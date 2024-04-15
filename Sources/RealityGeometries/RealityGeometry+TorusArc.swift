@@ -5,6 +5,7 @@
 //  Created by Shawn Coumbe on 12/03/2023.
 //  Based on code by Max Cobb
 
+#if canImport(RealityKit)
 import RealityKit
 
 extension RealityGeometry {
@@ -166,3 +167,4 @@ extension RealityGeometry {
         return allVertices
     }
 }
+#endif

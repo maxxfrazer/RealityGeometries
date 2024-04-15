@@ -5,6 +5,7 @@
 //  Created by Max Cobb on 11/06/2021.
 //
 
+#if canImport(RealityKit)
 import RealityKit
 
 extension RealityGeometry {
@@ -45,3 +46,4 @@ extension RealityGeometry {
         return try .generate(from: [descr])
     }
 }
+#endif
