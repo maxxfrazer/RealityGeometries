@@ -5,6 +5,7 @@
 //  Created by Max Cobb on 13/03/2023.
 //
 
+#if canImport(RealityKit)
 import Foundation
 import RealityKit
 
@@ -174,3 +175,4 @@ public extension RealityGeometry {
 
     }
 }
+#endif

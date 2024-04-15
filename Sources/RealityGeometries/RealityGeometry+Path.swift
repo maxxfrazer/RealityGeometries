@@ -5,6 +5,7 @@
 //  Created by Max Cobb on 15/10/2021.
 //
 
+#if canImport(RealityKit)
 import RealityKit
 import CoreGraphics
 import os
@@ -229,3 +230,4 @@ fileprivate extension SIMD3 where SIMD3.Scalar: Comparable {
         return SIMD3<Scalar>(self.x, 0, self.z)
     }
 }
+#endif

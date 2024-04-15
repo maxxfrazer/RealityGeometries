@@ -5,6 +5,7 @@
 //  Created by Max Cobb on 14/03/2023.
 //
 
+#if canImport(RealityKit)
 import RealityKit
 
 public extension MeshResource {
@@ -54,3 +55,4 @@ public extension MeshResource {
     @available(*, deprecated, renamed: "RealityGeometry.PathProperties")
     typealias PathProperties = RealityGeometry.PathProperties
 }
+#endif
